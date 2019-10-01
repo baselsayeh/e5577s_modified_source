@@ -1,3 +1,7 @@
+***USE IT ON YOUR OWN RISK***
+
+the modules are Based on firmware E5577Cs-321_Update_21.316.01.01.01.778_M_AT_04.10.rar from 4pda, the modules may not work on other version
+
 modified E5770S kernel source from huawei.
 Will not work on the device as there is some code missing.
 used for compiling modules
