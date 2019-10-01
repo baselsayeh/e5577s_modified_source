@@ -6,7 +6,7 @@ act_api replaces internal kernel code to add support for qos actions.
 
 
 the kernel is a modified E5770S kernel source from huawei.
-it not work on the device as there is some code missing.
+it will not work on the device as there is some code missing.
 this source can be used for compiling modules (such as tun.ko)
 
 opensource package E5770s-923_open_src.rar: 93d264438581a186615f570196c2ded6e1ef58f1
