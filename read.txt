@@ -1,0 +1,7 @@
+modified E5770S kernel source from huawei.
+Will not work on the device as there is some code missing.
+used for compiling modules
+
+opensource package E5770s-923_open_src.rar: 93d264438581a186615f570196c2ded6e1ef58f1
+kernel package v7r11_e5770s-923_kernel_opensrc.tar.gz: 43519ee2b550d3118ca198316895193598434737
+
