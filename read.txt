@@ -1,10 +1,13 @@
 ***USE IT ON YOUR OWN RISK***
 
-the modules are Based on firmware E5577Cs-321_Update_21.316.01.01.01.778_M_AT_04.10.rar from 4pda, the modules may not work on other version
+the modules are Based on firmware E5577Cs-321_Update_21.316.01.01.01.778_M_AT_04.10.rar from 4pda, they may not work on other versions
 
-modified E5770S kernel source from huawei.
-Will not work on the device as there is some code missing.
-used for compiling modules
+act_api replaces internal kernel code to add support for qos actions.
+
+
+the kernel is a modified E5770S kernel source from huawei.
+it not work on the device as there is some code missing.
+this source can be used for compiling modules (such as tun.ko)
 
 opensource package E5770s-923_open_src.rar: 93d264438581a186615f570196c2ded6e1ef58f1
 kernel package v7r11_e5770s-923_kernel_opensrc.tar.gz: 43519ee2b550d3118ca198316895193598434737
