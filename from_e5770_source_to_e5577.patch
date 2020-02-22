@@ -1,6 +1,6 @@
 diff -Naur ori/kernel/arch/arm/configs/e5577_defconfig kernel/arch/arm/configs/e5577_defconfig
 --- ori/kernel/arch/arm/configs/e5577_defconfig	1970-01-01 02:00:00.000000000 +0200
-+++ kernel/arch/arm/configs/e5577_defconfig	2020-02-21 14:35:03.344484409 +0200
++++ kernel/arch/arm/configs/e5577_defconfig	2020-02-22 15:23:58.836061846 +0200
 @@ -0,0 +1,2564 @@
 +#
 +# Automatically generated file; DO NOT EDIT.
@@ -2568,7 +2568,7 @@ diff -Naur ori/kernel/arch/arm/configs/e5577_defconfig kernel/arch/arm/configs/e
 +# CONFIG_ATP_GETINDEV is not set
 diff -Naur ori/kernel/drivers/huawei/dload_com/dload_nark_core.c kernel/drivers/huawei/dload_com/dload_nark_core.c
 --- ori/kernel/drivers/huawei/dload_com/dload_nark_core.c	2017-08-09 15:53:39.000000000 +0300
-+++ kernel/drivers/huawei/dload_com/dload_nark_core.c	2020-02-21 14:20:14.425777293 +0200
++++ kernel/drivers/huawei/dload_com/dload_nark_core.c	2020-02-22 15:23:58.868062160 +0200
 @@ -422,6 +422,7 @@
      return count;
  }
@@ -2595,7 +2595,7 @@ diff -Naur ori/kernel/drivers/huawei/dload_com/dload_nark_core.c kernel/drivers/
  /******************************************************************************
 diff -Naur ori/kernel/drivers/mmc/core/sd.c kernel/drivers/mmc/core/sd.c
 --- ori/kernel/drivers/mmc/core/sd.c	2017-08-09 15:53:39.000000000 +0300
-+++ kernel/drivers/mmc/core/sd.c	2020-02-21 12:30:32.359352558 +0200
++++ kernel/drivers/mmc/core/sd.c	2020-02-22 15:23:58.876062238 +0200
 @@ -37,7 +37,7 @@
  //unsigned int sd_removed = 1;
  
@@ -2607,7 +2607,7 @@ diff -Naur ori/kernel/drivers/mmc/core/sd.c kernel/drivers/mmc/core/sd.c
  #if defined(BSP_CONFIG_BOARD_E5577S_324)
 diff -Naur ori/kernel/drivers/modem/adp/Makefile kernel/drivers/modem/adp/Makefile
 --- ori/kernel/drivers/modem/adp/Makefile	2017-08-09 15:55:03.000000000 +0300
-+++ kernel/drivers/modem/adp/Makefile	2020-02-21 14:08:06.492421312 +0200
++++ kernel/drivers/modem/adp/Makefile	2020-02-22 15:23:58.876062238 +0200
 @@ -65,7 +65,9 @@
  obj-y           += adp_dialup_hsuart.o
  endif
@@ -2620,9 +2620,46 @@ diff -Naur ori/kernel/drivers/modem/adp/Makefile kernel/drivers/modem/adp/Makefi
 -endif
 \ No newline at end of file
 +endif
+diff -Naur ori/kernel/drivers/modem/keyboard/key_balong.c kernel/drivers/modem/keyboard/key_balong.c
+--- ori/kernel/drivers/modem/keyboard/key_balong.c	2017-08-23 11:12:40.000000000 +0300
++++ kernel/drivers/modem/keyboard/key_balong.c	2020-02-22 18:05:55.202322993 +0200
+@@ -87,6 +87,8 @@
+ {
+     if(MENU_KEY == key)
+     {
++        gpio_int_mask_set(MENU_KEY_GPIO);
++		gpio_int_state_clear(MENU_KEY_GPIO);
+     }
+     else if(RESET_KEY == key)
+     {
+@@ -112,6 +114,8 @@
+ {
+     if(MENU_KEY == key)
+     {
++        gpio_int_state_clear(MENU_KEY_GPIO);
++		gpio_int_unmask_set(MENU_KEY_GPIO);
+     }
+     else if(RESET_KEY == key)
+     {
+@@ -572,6 +576,15 @@
+ 
+ static struct gpio_keys_button gpio_keys_buttons[] = {
+ 		{
++			.code			= KEY_MENU,
++			.gpio			= MENU_KEY_GPIO,
++			.active_low		= 0,
++			.desc			= "menu key",
++	 		.type			= EV_KEY,
++			.wakeup			= 1,
++	 		.debounce_interval	= 20,
++		},
++		{
+ 			.code			= KEY_F24,
+ 			.gpio			= RESET_KEY_GPIO,
+ 			.active_low		= 0,
 diff -Naur ori/kernel/drivers/modem/onoff/power_exchange.c kernel/drivers/modem/onoff/power_exchange.c
 --- ori/kernel/drivers/modem/onoff/power_exchange.c	2017-08-23 11:12:40.000000000 +0300
-+++ kernel/drivers/modem/onoff/power_exchange.c	2020-02-21 12:30:32.359352558 +0200
++++ kernel/drivers/modem/onoff/power_exchange.c	2020-02-22 15:23:58.876062238 +0200
 @@ -87,7 +87,7 @@
   调用函数  : 
   被调函数  :
@@ -2634,7 +2671,7 @@ diff -Naur ori/kernel/drivers/modem/onoff/power_exchange.c kernel/drivers/modem/
  
 diff -Naur ori/kernel/drivers/modem/onoff/power_off.c kernel/drivers/modem/onoff/power_off.c
 --- ori/kernel/drivers/modem/onoff/power_off.c	2017-08-23 11:12:45.000000000 +0300
-+++ kernel/drivers/modem/onoff/power_off.c	2020-02-21 12:30:32.359352558 +0200
++++ kernel/drivers/modem/onoff/power_off.c	2020-02-22 15:23:58.880062277 +0200
 @@ -30,7 +30,7 @@
  LOCAL_1 bool is_power_off_charge_in( void );
  LOCAL_1 void power_off_set_flag_and_reboot( power_off_reboot_flag enRebootFlag );
@@ -2646,7 +2683,7 @@ diff -Naur ori/kernel/drivers/modem/onoff/power_off.c kernel/drivers/modem/onoff
  
 diff -Naur ori/kernel/drivers/power/charger/chg_config.h kernel/drivers/power/charger/chg_config.h
 --- ori/kernel/drivers/power/charger/chg_config.h	2017-08-09 15:54:57.000000000 +0300
-+++ kernel/drivers/power/charger/chg_config.h	2020-02-21 12:30:32.359352558 +0200
++++ kernel/drivers/power/charger/chg_config.h	2020-02-22 15:23:58.880062277 +0200
 @@ -4,6 +4,9 @@
  
  #ifndef CHG_CONFIG_H
@@ -2659,7 +2696,7 @@ diff -Naur ori/kernel/drivers/power/charger/chg_config.h kernel/drivers/power/ch
  #include "drv_onoff.h"
 diff -Naur ori/kernel/drivers/scsi/sd.c kernel/drivers/scsi/sd.c
 --- ori/kernel/drivers/scsi/sd.c	2017-08-09 15:53:45.000000000 +0300
-+++ kernel/drivers/scsi/sd.c	2020-02-21 12:30:32.359352558 +0200
++++ kernel/drivers/scsi/sd.c	2020-02-22 15:23:58.880062277 +0200
 @@ -156,7 +156,7 @@
  struct usb_diskinfo *diskinfos = NULL;
  
@@ -2671,7 +2708,7 @@ diff -Naur ori/kernel/drivers/scsi/sd.c kernel/drivers/scsi/sd.c
  	int j = -1;
 diff -Naur ori/kernel/drivers/usb/dwc3/dwc3-balong.c kernel/drivers/usb/dwc3/dwc3-balong.c
 --- ori/kernel/drivers/usb/dwc3/dwc3-balong.c	2017-08-09 15:54:54.000000000 +0300
-+++ kernel/drivers/usb/dwc3/dwc3-balong.c	2020-02-21 12:30:32.363348990 +0200
++++ kernel/drivers/usb/dwc3/dwc3-balong.c	2020-02-22 15:23:58.880062277 +0200
 @@ -23,6 +23,7 @@
  #include <linux/gfp.h>
  #include <linux/delay.h>
@@ -2682,7 +2719,7 @@ diff -Naur ori/kernel/drivers/usb/dwc3/dwc3-balong.c kernel/drivers/usb/dwc3/dwc
  #endif
 diff -Naur ori/kernel/drivers/usb/mbb_usb_unitary/mbb_usb_pnp.c kernel/drivers/usb/mbb_usb_unitary/mbb_usb_pnp.c
 --- ori/kernel/drivers/usb/mbb_usb_unitary/mbb_usb_pnp.c	2017-08-09 15:54:54.000000000 +0300
-+++ kernel/drivers/usb/mbb_usb_unitary/mbb_usb_pnp.c	2020-02-21 12:30:32.363348990 +0200
++++ kernel/drivers/usb/mbb_usb_unitary/mbb_usb_pnp.c	2020-02-22 15:23:58.880062277 +0200
 @@ -1,5 +1,5 @@
  
 -
@@ -2700,7 +2737,7 @@ diff -Naur ori/kernel/drivers/usb/mbb_usb_unitary/mbb_usb_pnp.c kernel/drivers/u
  #include "hw_pnp.h"
 diff -Naur ori/kernel/drivers/usb/mbb_usb_unitary/u_ether.c kernel/drivers/usb/mbb_usb_unitary/u_ether.c
 --- ori/kernel/drivers/usb/mbb_usb_unitary/u_ether.c	2017-08-09 15:54:53.000000000 +0300
-+++ kernel/drivers/usb/mbb_usb_unitary/u_ether.c	2020-02-21 12:30:32.363348990 +0200
++++ kernel/drivers/usb/mbb_usb_unitary/u_ether.c	2020-02-22 15:23:58.880062277 +0200
 @@ -152,7 +152,7 @@
      return (BCME_ERROR);
  }
@@ -2712,7 +2749,7 @@ diff -Naur ori/kernel/drivers/usb/mbb_usb_unitary/u_ether.c kernel/drivers/usb/m
      {
 diff -Naur ori/kernel/drivers/usb/mbb_usb_unitary/usb_otg_dev_detect.c kernel/drivers/usb/mbb_usb_unitary/usb_otg_dev_detect.c
 --- ori/kernel/drivers/usb/mbb_usb_unitary/usb_otg_dev_detect.c	2017-08-09 15:54:52.000000000 +0300
-+++ kernel/drivers/usb/mbb_usb_unitary/usb_otg_dev_detect.c	2020-02-21 12:30:32.363348990 +0200
++++ kernel/drivers/usb/mbb_usb_unitary/usb_otg_dev_detect.c	2020-02-22 15:23:58.880062277 +0200
 @@ -325,7 +325,7 @@
      g_device_type = otg->dev.dev_type;
      otg_dev_insert(otg);
@@ -2724,7 +2761,7 @@ diff -Naur ori/kernel/drivers/usb/mbb_usb_unitary/usb_otg_dev_detect.c kernel/dr
       u16 tmp_rtn_vbat_val = 0;
 diff -Naur ori/kernel/drivers/usb/mbb_usb_unitary/usb_otg_dev_detect.h kernel/drivers/usb/mbb_usb_unitary/usb_otg_dev_detect.h
 --- ori/kernel/drivers/usb/mbb_usb_unitary/usb_otg_dev_detect.h	2017-08-09 15:54:52.000000000 +0300
-+++ kernel/drivers/usb/mbb_usb_unitary/usb_otg_dev_detect.h	2020-02-21 12:30:32.363348990 +0200
++++ kernel/drivers/usb/mbb_usb_unitary/usb_otg_dev_detect.h	2020-02-22 15:23:58.880062277 +0200
 @@ -170,10 +170,10 @@
  
  USB_INT usb_otg_device_detect_init(USB_VOID);
@@ -2743,7 +2780,7 @@ diff -Naur ori/kernel/drivers/usb/mbb_usb_unitary/usb_otg_dev_detect.h kernel/dr
  
 diff -Naur ori/kernel/drivers/usb/mbb_usb_unitary/usb_vendor.c kernel/drivers/usb/mbb_usb_unitary/usb_vendor.c
 --- ori/kernel/drivers/usb/mbb_usb_unitary/usb_vendor.c	2017-08-09 15:54:54.000000000 +0300
-+++ kernel/drivers/usb/mbb_usb_unitary/usb_vendor.c	2020-02-21 21:54:25.340852664 +0200
++++ kernel/drivers/usb/mbb_usb_unitary/usb_vendor.c	2020-02-22 15:23:58.884062317 +0200
 @@ -626,7 +626,7 @@
      return 0;
  #endif
@@ -2755,7 +2792,7 @@ diff -Naur ori/kernel/drivers/usb/mbb_usb_unitary/usb_vendor.c kernel/drivers/us
      if (bsp_usb_is_support_usbid_bygpio())
 diff -Naur ori/kernel/drivers/usb/mbb_usb_unitary/usb_vendor.h kernel/drivers/usb/mbb_usb_unitary/usb_vendor.h
 --- ori/kernel/drivers/usb/mbb_usb_unitary/usb_vendor.h	2017-08-09 15:54:52.000000000 +0300
-+++ kernel/drivers/usb/mbb_usb_unitary/usb_vendor.h	2020-02-21 12:30:32.367345422 +0200
++++ kernel/drivers/usb/mbb_usb_unitary/usb_vendor.h	2020-02-22 15:23:58.884062317 +0200
 @@ -121,7 +121,7 @@
  /* ncm host assemble function */
  int ncm_set_host_assemble_param(int net_id, unsigned long host_timeout);
@@ -2767,7 +2804,7 @@ diff -Naur ori/kernel/drivers/usb/mbb_usb_unitary/usb_vendor.h kernel/drivers/us
  } /* allow C++ to use these headers */
 diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/balong_product_config.mk kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/balong_product_config.mk
 --- ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/balong_product_config.mk	1970-01-01 02:00:00.000000000 +0200
-+++ kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/balong_product_config.mk	2020-02-21 20:54:50.634846130 +0200
++++ kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/balong_product_config.mk	2020-02-22 18:02:20.049320808 +0200
 @@ -0,0 +1,610 @@
 +# MD5: a4b87805fb961d0f9745409521e608bb
 +CFG_BALONG_OBUILD_VERSION:=10
@@ -2779,10 +2816,10 @@ diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/conf
 +CFG_PRODUCT_VERSION_STR               :="V700R110C30B316"
 +CFG_PRODUCT_FULL_VERSION_STR          :="Balong V700R110C30B316"
 +CFG_PRODUCT_FILE_VERSION_STR          :="2.1.6.8"
-+CFG_PRODUCT_DLOAD_SOFTWARE_VER		:= "21.327.09.00.11"
++CFG_PRODUCT_DLOAD_SOFTWARE_VER		:= "21.316.01.01.778"
 +CFG_PRODUCT_CFG_DLOAD_KIND            :=ALL
-+CFG_PRODUCT_CFG_DLOAD_ID              :=BV7R11ED1
-+CFG_PRODUCT_CFG_DLOAD_ID_DEBUG        :=BV7R11ED1
++CFG_PRODUCT_CFG_DLOAD_ID              :=P711s-E5
++CFG_PRODUCT_CFG_DLOAD_ID_DEBUG        :=P711s-E5
 +CFG_PRODUCT_CFG_DLOAD_NAME            :=E5577s
 +CFG_PRODUCT_DLOAD_DASHBOARD_VER       :=THIRD_PARTY_VDF_PCSVV4.0
 +CFG_PRODUCT_DLOAD_VDF_VER             :=v4.0
@@ -3271,15 +3308,15 @@ diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/conf
 +MBB_MEM_CHECK    :=    FEATURE_OFF
 +MBB_OPERATOR_INDUSTRYCARD    :=    FEATURE_OFF
 +MBB_POWER_KEY    :=    FEATURE_ON
-+MBB_MENU_KEY    :=    FEATURE_OFF
++MBB_MENU_KEY    :=    FEATURE_ON
 +MBB_RESET_KEY    :=    FEATURE_ON
 +MBB_WLAN_KEY    :=    FEATURE_OFF
 +MBB_FLIGHT_MODE    :=    FEATURE_OFF
 +MBB_CHG_PLATFORM_V7R2    :=    FEATURE_ON
 +MBB_CHG_PLATFORM_9X25    :=    FEATURE_OFF
 +MBB_CHG_BAT_KNOCK_DOWN    :=    FEATURE_ON
-+MBB_CHG_LCD    :=    FEATURE_OFF
-+MBB_CHG_LED    :=    FEATURE_ON
++MBB_CHG_LCD    :=    FEATURE_ON
++MBB_CHG_LED    :=    FEATURE_OFF
 +MBB_CHG_OLED    :=    FEATURE_OFF
 +MBB_CHG_TOUCH    :=    FEATURE_OFF
 +MBB_CHG_LINUX    :=    FEATURE_ON
@@ -3381,7 +3418,7 @@ diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/conf
 +MBB_WPG_APNLIST_UPDATE_NVBAK    :=    FEATURE_OFF
 diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/mbb_adapt.h kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/mbb_adapt.h
 --- ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/mbb_adapt.h	1970-01-01 02:00:00.000000000 +0200
-+++ kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/mbb_adapt.h	2020-02-21 12:30:32.367345422 +0200
++++ kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/mbb_adapt.h	2020-02-22 17:41:54.875643277 +0200
 @@ -0,0 +1,54 @@
 +/*************************************************************************
 +CAUTION : This file is Auto Generated by VBA based on 《V711 MBB PRODUCT_auto_adaptor.xlsm》.
@@ -3401,15 +3438,15 @@ diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/conf
 +/*************************** MBB 自适配文件开始 *****************************/
 +/****************************************************************************/
 +#define    GPIO_NULL                           (-1)               /* 无此GPIO时取-1 */
-+#define    MENU_KEY_GPIO                       (GPIO_NULL)        /* MENU/WPS键 */
-+#define    RESET_KEY_GPIO                      (GPIO_0_2)         /* RESET键 */
++#define    MENU_KEY_GPIO                       (GPIO_0_2)         /* MENU/WPS键 */
++#define    RESET_KEY_GPIO                      (GPIO_0_3)         /* RESET键 */
 +#define    WIFI_KEY_GPIO                       (GPIO_NULL)        /* WIFI/WLAN键 */
 +#define    WIFI_ACTIVE_GPIO                    (GPIO_2_21)        /* wifi enable */
 +#define    WIFI_WAKEUP_BB_GPIO                 (GPIO_0_4)         /* wifi wakeup bb */
 +#define    CHG_ENABLE_GPIO                     (GPIO_2_1)        /* charge enable */
 +#define    CHG_BATT_LOW_INT                    (GPIO_NULL)        /* batt low int */
 +#define    CHG_BATT_ID_CHAN                    (0)                /* batt id hkadc channel */
-+#define    CHG_BATT_TEMP_CHAN                  (2)                /* batt temp hkadc channel */
++#define    CHG_BATT_TEMP_CHAN                  (1)                /* batt temp hkadc channel */
 +#define    CHG_BATT_VOLT_CHAN                  (8)                /* batt volt hkadc channel */
 +#define    CHG_VBUS_VOLT_CHAN                  (-1)               /* vbus volt hkadc channel */
 +#define    LCD_BACKLIGHT_GPIO                  (GPIO_NULL)        /* lcd backlight */
@@ -3425,7 +3462,7 @@ diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/conf
 +//         for sd1: GPIO_2_19
 +#define    SIM0_DETECT_GPIO                    (GPIO_NULL)        /* sim detect */ //0xFFFFFFFF from kernel
 +#define    OTG_ID_SWITCH_GPIO                  (GPIO_2_5)         /* otg detect */
-+#define    OTG_VBUS_DET_GPIO                   (GPIO_NULL)        /* otg detect */
++#define    OTG_VBUS_DET_GPIO                   (GPIO_1_27)        /* otg detect */
 +
 +
 +/******************************************************************************/
@@ -3439,7 +3476,7 @@ diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/conf
 +#endif /*__MBB_PRODUCT_ADAPT_H__ */
 diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/mbb_config.h kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/mbb_config.h
 --- ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/mbb_config.h	1970-01-01 02:00:00.000000000 +0200
-+++ kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/mbb_config.h	2020-02-21 20:54:59.090803644 +0200
++++ kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/mbb_config.h	2020-02-22 15:23:58.884062317 +0200
 @@ -0,0 +1,374 @@
 +/*************************************************************************
 +CAUTION : This file is Auto Generated by VBA based on 《V711 MBB MACRO_auto_generator.xlsm》.
@@ -3817,7 +3854,7 @@ diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/conf
 +#endif /*__MBB_CONFIG_H__ */
 diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/product_config.h kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/product_config.h
 --- ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/product_config.h	1970-01-01 02:00:00.000000000 +0200
-+++ kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/product_config.h	2020-02-21 12:30:32.367345422 +0200
++++ kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/product_config.h	2020-02-22 16:08:10.904389596 +0200
 @@ -0,0 +1,1763 @@
 +/* MD5: bcbfc885033fc31c8531b0efda0202ee*/
 +#if !defined(__PRODUCT_CONFIG_H__)
@@ -3856,7 +3893,7 @@ diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/conf
 +#endif 
 +
 +#ifndef PRODUCT_DLOAD_SOFTWARE_VER		
-+#define PRODUCT_DLOAD_SOFTWARE_VER		 "21.180.00.00.00" 
++#define PRODUCT_DLOAD_SOFTWARE_VER		 "21.316.01.01.778" 
 +#endif 
 +
 +#ifndef PRODUCT_CFG_DLOAD_KIND
@@ -3864,7 +3901,7 @@ diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/conf
 +#endif 
 +
 +#ifndef PRODUCT_CFG_DLOAD_ID
-+#define PRODUCT_CFG_DLOAD_ID BV7R11EC0 
++#define PRODUCT_CFG_DLOAD_ID P711s-E5 
 +#endif 
 +
 +#ifndef PRODUCT_CFG_DLOAD_NAME
@@ -5584,7 +5621,7 @@ diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/conf
 +#endif /*__PRODUCT_CONFIG_H__*/ 
 diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/system.sh kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/system.sh
 --- ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/system.sh	1970-01-01 02:00:00.000000000 +0200
-+++ kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/system.sh	2020-02-21 12:30:32.367345422 +0200
++++ kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/config/system.sh	2020-02-22 15:23:58.888062356 +0200
 @@ -0,0 +1,67 @@
 +#!/bin/bash
 +cd system
@@ -5655,7 +5692,7 @@ diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/conf
 +
 diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/include_gu/MemoryConfig.h kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/include_gu/MemoryConfig.h
 --- ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/include_gu/MemoryConfig.h	1970-01-01 02:00:00.000000000 +0200
-+++ kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/include_gu/MemoryConfig.h	2020-02-21 12:30:32.367345422 +0200
++++ kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/include_gu/MemoryConfig.h	2020-02-22 15:23:58.888062356 +0200
 @@ -0,0 +1,23 @@
 +
 +#ifndef __MEMORY_CONFIG_H__
@@ -5682,7 +5719,7 @@ diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/incl
 +#endif /* __MEMORY_CONFIG_H__ */
 diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/include_gu/MemoryLayout.h kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/include_gu/MemoryLayout.h
 --- ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/include_gu/MemoryLayout.h	1970-01-01 02:00:00.000000000 +0200
-+++ kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/include_gu/MemoryLayout.h	2020-02-21 12:30:32.367345422 +0200
++++ kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/include_gu/MemoryLayout.h	2020-02-22 15:23:58.888062356 +0200
 @@ -0,0 +1,24 @@
 +
 +#ifndef __MEMMORY_LAYOUT_H__
@@ -5710,7 +5747,7 @@ diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/incl
 +
 diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/include_gu/MemoryMap.h kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/include_gu/MemoryMap.h
 --- ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/include_gu/MemoryMap.h	1970-01-01 02:00:00.000000000 +0200
-+++ kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/include_gu/MemoryMap.h	2020-02-21 12:30:32.367345422 +0200
++++ kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/include_gu/MemoryMap.h	2020-02-22 15:23:58.888062356 +0200
 @@ -0,0 +1,123 @@
 +
 +#ifndef MEMORY_MAP_H
@@ -5837,7 +5874,7 @@ diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/incl
 +
 diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/include_gu/Version.h kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/include_gu/Version.h
 --- ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/include_gu/Version.h	1970-01-01 02:00:00.000000000 +0200
-+++ kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/include_gu/Version.h	2020-02-21 12:30:32.367345422 +0200
++++ kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/include_gu/Version.h	2020-02-22 15:23:58.888062356 +0200
 @@ -0,0 +1,31 @@
 +
 +
@@ -5872,7 +5909,7 @@ diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/incl
 +#endif /* end of Version.h */
 diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/os/hifi/memmap.xmm kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/os/hifi/memmap.xmm
 --- ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/os/hifi/memmap.xmm	1970-01-01 02:00:00.000000000 +0200
-+++ kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/os/hifi/memmap.xmm	2020-02-21 12:30:32.367345422 +0200
++++ kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5577s/os/hifi/memmap.xmm	2020-02-22 15:23:58.888062356 +0200
 @@ -0,0 +1,35 @@
 +
 +
@@ -9945,7 +9982,7 @@ diff -Naur ori/kernel/drivers/vendor/hisi/config/product/hi6921_v711_e5770s/os/h
 \ No newline at end of file
 diff -Naur ori/kernel/drivers/vendor/hisi/modem/taf/comm/src/acore/at/src/AtCmdRsfrEx.c kernel/drivers/vendor/hisi/modem/taf/comm/src/acore/at/src/AtCmdRsfrEx.c
 --- ori/kernel/drivers/vendor/hisi/modem/taf/comm/src/acore/at/src/AtCmdRsfrEx.c	2017-08-09 15:52:07.000000000 +0300
-+++ kernel/drivers/vendor/hisi/modem/taf/comm/src/acore/at/src/AtCmdRsfrEx.c	2020-02-21 12:30:32.371341853 +0200
++++ kernel/drivers/vendor/hisi/modem/taf/comm/src/acore/at/src/AtCmdRsfrEx.c	2020-02-22 15:23:58.952062983 +0200
 @@ -148,7 +148,7 @@
      }
  } 
@@ -9957,7 +9994,7 @@ diff -Naur ori/kernel/drivers/vendor/hisi/modem/taf/comm/src/acore/at/src/AtCmdR
      VOS_INT32 ret = 0;
 diff -Naur ori/kernel/drivers/vendor/hisi/modem/taf/comm/src/acore/at/src/AtDeviceCmd.c kernel/drivers/vendor/hisi/modem/taf/comm/src/acore/at/src/AtDeviceCmd.c
 --- ori/kernel/drivers/vendor/hisi/modem/taf/comm/src/acore/at/src/AtDeviceCmd.c	2017-08-09 15:52:12.000000000 +0300
-+++ kernel/drivers/vendor/hisi/modem/taf/comm/src/acore/at/src/AtDeviceCmd.c	2020-02-21 12:30:32.375338285 +0200
++++ kernel/drivers/vendor/hisi/modem/taf/comm/src/acore/at/src/AtDeviceCmd.c	2020-02-22 15:23:58.960063062 +0200
 @@ -989,7 +989,7 @@
  *****************************************************************************/
  #if (FEATURE_ON == MBB_COMMON)
@@ -9969,7 +10006,7 @@ diff -Naur ori/kernel/drivers/vendor/hisi/modem/taf/comm/src/acore/at/src/AtDevi
      VOS_UINT8 *PaucPara = gastAtParaList[1].aucPara;
 diff -Naur ori/kernel/drivers/wlan_if/wlan_at_api_bcm43241.c kernel/drivers/wlan_if/wlan_at_api_bcm43241.c
 --- ori/kernel/drivers/wlan_if/wlan_at_api_bcm43241.c	1970-01-01 02:00:00.000000000 +0200
-+++ kernel/drivers/wlan_if/wlan_at_api_bcm43241.c	2020-02-21 21:23:53.348247212 +0200
++++ kernel/drivers/wlan_if/wlan_at_api_bcm43241.c	2020-02-22 15:23:58.960063062 +0200
 @@ -0,0 +1,1275 @@
 +
 +
@@ -11248,7 +11285,7 @@ diff -Naur ori/kernel/drivers/wlan_if/wlan_at_api_bcm43241.c kernel/drivers/wlan
 +
 diff -Naur ori/kernel/drivers/wlan_if/wlan_if.c kernel/drivers/wlan_if/wlan_if.c
 --- ori/kernel/drivers/wlan_if/wlan_if.c	2017-08-09 15:55:11.000000000 +0300
-+++ kernel/drivers/wlan_if/wlan_if.c	2020-02-21 12:30:32.375338285 +0200
++++ kernel/drivers/wlan_if/wlan_if.c	2020-02-22 15:23:58.960063062 +0200
 @@ -296,7 +296,7 @@
   返 回 值  : 0:不处于关机状态
               1:正在关机
@@ -11305,7 +11342,7 @@ diff -Naur ori/kernel/drivers/wlan_if/wlan_if.c kernel/drivers/wlan_if/wlan_if.c
      if (NULL != g_wlan_mem_cache.recv)
 diff -Naur ori/kernel/fs/yaffs2/yaffs_vfs.c kernel/fs/yaffs2/yaffs_vfs.c
 --- ori/kernel/fs/yaffs2/yaffs_vfs.c	2017-08-09 15:51:59.000000000 +0300
-+++ kernel/fs/yaffs2/yaffs_vfs.c	2020-02-21 12:30:32.375338285 +0200
++++ kernel/fs/yaffs2/yaffs_vfs.c	2020-02-22 15:23:58.968063141 +0200
 @@ -37,6 +37,7 @@
   */
  
@@ -11316,7 +11353,7 @@ diff -Naur ori/kernel/fs/yaffs2/yaffs_vfs.c kernel/fs/yaffs2/yaffs_vfs.c
  #endif
 diff -Naur ori/kernel/include/drv_comm.h kernel/include/drv_comm.h
 --- ori/kernel/include/drv_comm.h	2017-08-09 15:56:03.000000000 +0300
-+++ kernel/include/drv_comm.h	2020-02-21 12:30:32.375338285 +0200
++++ kernel/include/drv_comm.h	2020-02-22 15:23:58.968063141 +0200
 @@ -3,6 +3,7 @@
  #ifndef __DRV_COMM_H__
  #define __DRV_COMM_H__
@@ -11327,7 +11364,7 @@ diff -Naur ori/kernel/include/drv_comm.h kernel/include/drv_comm.h
  /*************************GLOBAL BEGIN*****************************/
 diff -Naur ori/kernel/include/hi_pwrctrl_interface.h kernel/include/hi_pwrctrl_interface.h
 --- ori/kernel/include/hi_pwrctrl_interface.h	2017-08-09 15:55:50.000000000 +0300
-+++ kernel/include/hi_pwrctrl_interface.h	2020-02-21 12:30:32.375338285 +0200
++++ kernel/include/hi_pwrctrl_interface.h	2020-02-22 15:23:58.968063141 +0200
 @@ -542,11 +542,11 @@
  /****************************p531 end*********************************/
  
@@ -11344,7 +11381,7 @@ diff -Naur ori/kernel/include/hi_pwrctrl_interface.h kernel/include/hi_pwrctrl_i
  }
 diff -Naur ori/kernel/include/linux/fake/typedefs.h kernel/include/linux/fake/typedefs.h
 --- ori/kernel/include/linux/fake/typedefs.h	2017-08-09 15:51:31.000000000 +0300
-+++ kernel/include/linux/fake/typedefs.h	2020-02-21 12:30:32.375338285 +0200
++++ kernel/include/linux/fake/typedefs.h	2020-02-22 15:23:58.968063141 +0200
 @@ -19,6 +19,13 @@
  #ifndef _TYPEDEFS_H_
  #define _TYPEDEFS_H_
@@ -11385,7 +11422,7 @@ diff -Naur ori/kernel/include/linux/fake/typedefs.h kernel/include/linux/fake/ty
  
 diff -Naur ori/kernel/include/linux/mtd/partitions.h kernel/include/linux/mtd/partitions.h
 --- ori/kernel/include/linux/mtd/partitions.h	2017-08-09 15:55:53.000000000 +0300
-+++ kernel/include/linux/mtd/partitions.h	2020-02-21 12:30:32.375338285 +0200
++++ kernel/include/linux/mtd/partitions.h	2020-02-22 15:23:58.968063141 +0200
 @@ -10,7 +10,7 @@
  #define MTD_PARTITIONS_H
  
@@ -11397,7 +11434,7 @@ diff -Naur ori/kernel/include/linux/mtd/partitions.h kernel/include/linux/mtd/pa
   * Partition definition structure:
 diff -Naur ori/kernel/include/linux/skbuff.h kernel/include/linux/skbuff.h
 --- ori/kernel/include/linux/skbuff.h	2017-08-09 15:55:52.000000000 +0300
-+++ kernel/include/linux/skbuff.h	2020-02-21 12:30:32.379334717 +0200
++++ kernel/include/linux/skbuff.h	2020-02-22 15:23:58.972063179 +0200
 @@ -393,7 +393,9 @@
  	struct sk_buff		*prev;
  
@@ -11435,9 +11472,83 @@ diff -Naur ori/kernel/include/linux/skbuff.h kernel/include/linux/skbuff.h
  
  	__u16			queue_mapping;
  	kmemcheck_bitfield_begin(flags2);
+diff -Naur ori/kernel/include/mbb_adapt.h kernel/include/mbb_adapt.h
+--- ori/kernel/include/mbb_adapt.h	2017-08-09 15:51:34.000000000 +0300
++++ kernel/include/mbb_adapt.h	2020-02-22 18:03:03.748615209 +0200
+@@ -4,44 +4,44 @@
+ ****************************************************************************/
+ #ifndef __MBB_PRODUCT_ADAPT_H__
+ #define __MBB_PRODUCT_ADAPT_H__
+-
++
+ 
+ #ifdef __cplusplus
+ extern "C"
+ {
+ #endif
+-
++
+ 
+ /****************************************************************************/
+ /*************************** MBB 自适配文件开始 *****************************/
+ /****************************************************************************/
+ #define    GPIO_NULL                           (-1)               /* 无此GPIO时取-1 */
+-#define    MENU_KEY_GPIO                       (GPIO_NULL)        /* MENU/WPS键 */
++#define    MENU_KEY_GPIO                       (GPIO_0_2)         /* MENU/WPS键 */
+ #define    RESET_KEY_GPIO                      (GPIO_0_3)         /* RESET键 */
+ #define    WIFI_KEY_GPIO                       (GPIO_NULL)        /* WIFI/WLAN键 */
+ #define    FLIGHT_KEY_GPIO                     (GPIO_NULL)        /* FLIGHT键 */
+ #define    WIFI_ACTIVE_GPIO                    (GPIO_2_21)        /* wifi enable */
+ #define    WIFI_WAKEUP_BB_GPIO                 (GPIO_0_4)         /* wifi wakeup bb */
+ #define    CHG_ENABLE_GPIO                     (GPIO_2_1)         /* charge enable */
+-#define    CHG_BATT_LOW_INT                    (GPIO_2_4)         /* batt low int */
++#define    CHG_BATT_LOW_INT                    (GPIO_NULL)         /* batt low int */ //For bq27510 only
+ #define    CHG_BATT_ID_CHAN                    (0)                /* batt id hkadc channel */
+ #define    CHG_BATT_TEMP_CHAN                  (1)                /* batt temp hkadc channel */
+ #define    CHG_BATT_VOLT_CHAN                  (8)                /* batt volt hkadc channel */
+ #define    CHG_VBUS_VOLT_CHAN                  (-1)               /* vbus volt hkadc channel */
+ #define    CHG_USB_TEMP_CHAN                   (2)                /* USB temp hkadc channel */
+ #define    LCD_BACKLIGHT_GPIO                  (GPIO_NULL)        /* lcd backlight */
+-#define    LCD_ID00_GPIO                       (GPIO_NULL)        /* lcd id0 */
+-#define    LCD_ID01_GPIO                       (GPIO_NULL)        /* lcd id1 */
++#define    LCD_ID00_GPIO                       (GPIO_2_20)        /* lcd id0 */
++#define    LCD_ID01_GPIO                       (GPIO_2_22)        /* lcd id1 */
+ #define    OLED_ID0_GPIO                       (GPIO_NULL)        /* oled id0 */
+ #define    OLED_ID1_GPIO                       (GPIO_NULL)        /* oled id1 */
+ #define    OLED_CD_GPIO                        (GPIO_NULL)        /* oled cd */
+-#define    OTG_ID_DET_GPIO                     (GPIO_NULL)        /* otg detect */
+-#define    OTG_ID_SET_GPIO                     (GPIO_NULL)        /* otg set */
+-#define    DMDP_CONNECT_GPIO                   (GPIO_NULL)        /* dmdp connect */
++#define    OTG_ID_DET_GPIO                     (GPIO_0_5)         /* otg detect */
++#define    OTG_ID_SET_GPIO                     (GPIO_2_3)         /* otg set */
++#define    DMDP_CONNECT_GPIO                   (GPIO_2_26)        /* dmdp connect */
+ #define    SD_DETECT_GPIO                      (GPIO_NULL)        /* sd detect */
+ #define    SIM0_DETECT_GPIO                    (GPIO_NULL)        /* sim detect */
+-#define    OTG_ID_SWITCH_GPIO                  (GPIO_NULL)        /* otg detect */
+-#define    OTG_VBUS_DET_GPIO                   (GPIO_NULL)        /* otg detect */
++#define    OTG_ID_SWITCH_GPIO                  (GPIO_2_5)         /* otg detect */
++#define    OTG_VBUS_DET_GPIO                   (GPIO_1_27)        /* otg detect */
+ #define    EXTCHG_OTG_DET_GPIO                 (GPIO_NULL)        /* extchg otg detect */
+ #define    EXTCHG_CHG_ENABLE                   (GPIO_NULL)        /* extern charge enable */
+ #define    RE_ILIM_1A_GPIO                     (GPIO_NULL)        /* extcharge limit 1A current */
+@@ -55,11 +55,12 @@
+ #define    GPIO_PHY_RESET                      (GPIO_NULL)        /* phy reset */
+ #define    EXTCHG_SHORT_VOLT_CHAN              (-1)               /* extchg volt channel */
+ #define    LCD_RESET_N                         (GPIO_NULL)        /* LCD reset */
+-
++
++
+ /******************************************************************************/
+ /***************************** MBB 自适配文件结束 *****************************/
+ /******************************************************************************/
+-
++
+ 
+ #ifdef __cplusplus
+ }
 diff -Naur ori/kernel/include/mbb_config.h kernel/include/mbb_config.h
 --- ori/kernel/include/mbb_config.h	2017-08-09 15:51:34.000000000 +0300
-+++ kernel/include/mbb_config.h	2020-02-21 20:53:50.147161317 +0200
++++ kernel/include/mbb_config.h	2020-02-22 17:59:19.952902273 +0200
 @@ -4,13 +4,13 @@
  ****************************************************************************/
  #ifndef __MBB_CONFIG_H__
@@ -11472,7 +11583,7 @@ diff -Naur ori/kernel/include/mbb_config.h kernel/include/mbb_config.h
  #define    MBB_WIFI                            FEATURE_ON         /* 一级宏：wifi */
  #define    MBB_FAST_ON_OFF                     FEATURE_OFF        /* 一级宏：快速开关机 */
  #define    MBB_WPG_COMMON                      FEATURE_ON         /* 一级宏：无线协议代码控制 */
-@@ -49,26 +49,28 @@
+@@ -49,28 +49,30 @@
  #define    MBB_FEATURE_SD_POLLING              FEATURE_OFF        /* 一级宏：SD卡轮询检测 */
  #define    MBB_FEATURE_PHY_NUM                 FEATURE_ON         /* 一级宏：硬件版本号适配 */
  #define    MBB_REB                             FEATURE_ON         /* 一级宏：软件可靠性 */
@@ -11506,8 +11617,11 @@ diff -Naur ori/kernel/include/mbb_config.h kernel/include/mbb_config.h
 -#define    MBB_OPERATOR_VDF                    FEATURE_ON         /* 一级宏：vodafone操作特性宏 */
 +#define    MBB_OPERATOR_VDF                    FEATURE_OFF        /* 一级宏：vodafone操作特性宏 */
  #define    MBB_FASTBOOT_SECURITY               FEATURE_ON         /* 一级宏：关闭fastboot的一些命令，只保留导dump功能，发货前打开 */
- #define    MBB_DLOAD_DOUBLE_PART               FEATURE_ON         /* 一级宏：分区双备份 */
+-#define    MBB_DLOAD_DOUBLE_PART               FEATURE_ON         /* 一级宏：分区双备份 */
++#define    MBB_DLOAD_DOUBLE_PART               FEATURE_OFF        /* 一级宏：分区双备份 */
  #define    MBB_FEATURE_ESIM_SWITCH             FEATURE_OFF        /* 一级宏：外置usim和esim切换 */
+ #define    MBB_FEATURE_BOX_FTEN                FEATURE_OFF        /* 一级宏：丰田定制信息，打开和关闭低软丰田定制功能的代码（丰田at命令，丰田相关nv备份，丰田usb驱动） */
+ #define    MBB_MEM_CHECK                       FEATURE_OFF        /* 一级宏：mem check功能宏 */
 @@ -117,12 +119,12 @@
  #define    MBB_MEM_CHECK                       FEATURE_OFF        /* 一级宏：mem check功能宏 */
  #define    MBB_OPERATOR_INDUSTRYCARD           FEATURE_OFF        /* 一级宏：行业卡类产品特性宏 */
@@ -11620,7 +11734,7 @@ diff -Naur ori/kernel/include/mbb_config.h kernel/include/mbb_config.h
  }
 diff -Naur ori/kernel/include/product_config.h kernel/include/product_config.h
 --- ori/kernel/include/product_config.h	2018-02-01 13:22:12.000000000 +0200
-+++ kernel/include/product_config.h	2020-02-21 12:52:07.966268827 +0200
++++ kernel/include/product_config.h	2020-02-22 16:07:46.508288499 +0200
 @@ -7,7 +7,7 @@
  #endif 
  
@@ -11630,7 +11744,45 @@ diff -Naur ori/kernel/include/product_config.h kernel/include/product_config.h
  #endif 
  
  #ifndef PRODUCT_TYPE
-@@ -55,7 +55,7 @@
+@@ -23,15 +23,15 @@
+ #endif 
+ 
+ #ifndef PRODUCT_VERSION
+-#define PRODUCT_VERSION V700R110C30B327 
++#define PRODUCT_VERSION V700R110C30B316 
+ #endif 
+ 
+ #ifndef PRODUCT_VERSION_STR
+-#define PRODUCT_VERSION_STR "V700R110C30B327" 
++#define PRODUCT_VERSION_STR "V700R110C30B316" 
+ #endif 
+ 
+ #ifndef PRODUCT_FULL_VERSION_STR
+-#define PRODUCT_FULL_VERSION_STR "Balong V700R110C30B327" 
++#define PRODUCT_FULL_VERSION_STR "Balong V700R110C30B316" 
+ #endif 
+ 
+ #ifndef PRODUCT_FILE_VERSION_STR
+@@ -39,7 +39,7 @@
+ #endif 
+ 
+ #ifndef PRODUCT_DLOAD_SOFTWARE_VER		
+-#define PRODUCT_DLOAD_SOFTWARE_VER		 "21.327.09.00.11" 
++#define PRODUCT_DLOAD_SOFTWARE_VER		 "21.316.01.01.778" 
+ #endif 
+ 
+ #ifndef PRODUCT_CFG_DLOAD_KIND
+@@ -47,15 +47,15 @@
+ #endif 
+ 
+ #ifndef PRODUCT_CFG_DLOAD_ID
+-#define PRODUCT_CFG_DLOAD_ID BV7R11ED1 
++#define PRODUCT_CFG_DLOAD_ID P711s-E5 
+ #endif 
+ 
+ #ifndef PRODUCT_CFG_DLOAD_ID_DEBUG
+-#define PRODUCT_CFG_DLOAD_ID_DEBUG BV7R11ED1 
++#define PRODUCT_CFG_DLOAD_ID_DEBUG P711s-E5 
  #endif 
  
  #ifndef PRODUCT_CFG_DLOAD_NAME
@@ -11706,7 +11858,7 @@ diff -Naur ori/kernel/include/product_config.h kernel/include/product_config.h
  #ifndef FEATURE_MMI_TEST
 diff -Naur ori/kernel/include/usb_vendor.h kernel/include/usb_vendor.h
 --- ori/kernel/include/usb_vendor.h	2017-08-09 15:56:00.000000000 +0300
-+++ kernel/include/usb_vendor.h	2020-02-21 12:30:32.379334717 +0200
++++ kernel/include/usb_vendor.h	2020-02-22 15:23:58.972063179 +0200
 @@ -121,7 +121,7 @@
  /* ncm host assemble function */
  int ncm_set_host_assemble_param(int net_id, unsigned long host_timeout);
@@ -11718,7 +11870,7 @@ diff -Naur ori/kernel/include/usb_vendor.h kernel/include/usb_vendor.h
  } /* allow C++ to use these headers */
 diff -Naur ori/kernel/kernel/timeconst.pl kernel/kernel/timeconst.pl
 --- ori/kernel/kernel/timeconst.pl	2017-08-09 15:50:29.000000000 +0300
-+++ kernel/kernel/timeconst.pl	2020-02-21 12:30:32.379334717 +0200
++++ kernel/kernel/timeconst.pl	2020-02-22 15:23:58.980063258 +0200
 @@ -369,10 +369,9 @@
  		die "Usage: $0 HZ\n";
  	}
@@ -11735,7 +11887,7 @@ diff -Naur ori/kernel/kernel/timeconst.pl kernel/kernel/timeconst.pl
  exit 0;
 diff -Naur ori/kernel/Makefile kernel/Makefile
 --- ori/kernel/Makefile	2018-02-01 13:22:22.000000000 +0200
-+++ kernel/Makefile	2020-02-21 13:31:44.747340373 +0200
++++ kernel/Makefile	2020-02-22 15:23:58.980063258 +0200
 @@ -390,7 +390,7 @@
  
  # add hisilicon balong configs
@@ -11747,7 +11899,7 @@ diff -Naur ori/kernel/Makefile kernel/Makefile
  TARGET_ARM_TYPE := arm
 diff -Naur ori/kernel/net/bridge/Makefile kernel/net/bridge/Makefile
 --- ori/kernel/net/bridge/Makefile	2017-08-09 15:51:04.000000000 +0300
-+++ kernel/net/bridge/Makefile	2020-02-21 21:39:50.518248338 +0200
++++ kernel/net/bridge/Makefile	2020-02-22 15:23:58.980063258 +0200
 @@ -6,7 +6,7 @@
  
  bridge-y	:= br.o br_device.o br_fdb.o br_forward.o br_if.o br_input.o \
@@ -11759,7 +11911,7 @@ diff -Naur ori/kernel/net/bridge/Makefile kernel/net/bridge/Makefile
  
 diff -Naur ori/kernel/net/core/ethtool.c kernel/net/core/ethtool.c
 --- ori/kernel/net/core/ethtool.c	2017-08-09 15:51:04.000000000 +0300
-+++ kernel/net/core/ethtool.c	2020-02-21 12:30:32.379334717 +0200
++++ kernel/net/core/ethtool.c	2020-02-22 15:23:58.980063258 +0200
 @@ -1511,7 +1511,7 @@
  	return rc;
  }
@@ -11771,7 +11923,7 @@ diff -Naur ori/kernel/net/core/ethtool.c kernel/net/core/ethtool.c
  
 diff -Naur ori/kernel/net/netlink/atp_hw_netlink.c kernel/net/netlink/atp_hw_netlink.c
 --- ori/kernel/net/netlink/atp_hw_netlink.c	2017-08-09 15:55:20.000000000 +0300
-+++ kernel/net/netlink/atp_hw_netlink.c	2020-02-21 12:30:32.379334717 +0200
++++ kernel/net/netlink/atp_hw_netlink.c	2020-02-22 15:23:58.980063258 +0200
 @@ -214,7 +214,7 @@
      (*ppstItem)->skb = skb;
  }
