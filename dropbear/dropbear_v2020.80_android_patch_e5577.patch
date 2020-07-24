@@ -1,0 +1,981 @@
+diff -Naur ori/dropbear-2020.80/android_crypt_password.c dropbear-2020.80/android_crypt_password.c
+--- ori/dropbear-2020.80/android_crypt_password.c	1970-01-01 02:00:00.000000000 +0200
++++ dropbear-2020.80/android_crypt_password.c	2020-07-24 23:46:34.973721619 +0300
+@@ -0,0 +1,65 @@
++#include <tomcrypt.h>
++
++#include "android_crypt_password.h"
++
++void convert_to_hex(char *output, const char *input, unsigned long inputSize) {
++	for (unsigned long i=0; i<inputSize; i++) {
++		sprintf(output, "%02x", *input);
++		input++;
++		output+=2;
++	}
++}
++
++unsigned char *android_hash_password(const char* input, unsigned long inputSize) {
++	static char salt[android_pkcs5_salt_length] = {0};
++	static char out_hash[android_pkcs5_out_length];
++	static char out_hex[android_pkcs5_out_length+2];
++
++	unsigned long outlen = android_pkcs5_out_length;
++
++	/*unsigned char *out_hash;
++	unsigned char *out_hex;*/
++
++	int idx;
++
++	if (salt[0] == '\0') { //init
++		if (rng_get_bytes(salt, sizeof(salt), NULL) != sizeof(salt)) { salt[0] = '\0'; goto error; }
++	}
++
++	//init
++	/*out_hash = (unsigned char*)malloc(outlen);
++	out_hex = (unsigned char*) malloc(outlen*2 + 2);
++
++	if (out_hash == NULL || out_hex == NULL)
++		goto error;*/
++
++	memset(out_hash, 0x00, outlen);
++	memset(out_hex, 0x00, outlen);
++
++	idx = find_hash(android_pkcs5_algo);
++	if (idx == -1) {
++		printf("cannot find %s\n", android_pkcs5_algo);
++		goto error;
++	}
++
++	if (pkcs_5_alg2(input, inputSize,
++		salt, sizeof(salt),
++		android_pkcs5_out_length, idx,
++		out_hash, &outlen) != CRYPT_OK) goto error;
++
++	convert_to_hex(out_hex, out_hash, outlen);
++
++	//free(out_hash);
++	//out_hash = NULL;
++
++	return out_hex;
++
++	error:
++
++	/*if (out_hash != NULL) free(out_hash);
++	if (out_hex != NULL) free(out_hex);*/
++
++	return NULL;
++
++}
++
+diff -Naur ori/dropbear-2020.80/android_crypt_password.h dropbear-2020.80/android_crypt_password.h
+--- ori/dropbear-2020.80/android_crypt_password.h	1970-01-01 02:00:00.000000000 +0200
++++ dropbear-2020.80/android_crypt_password.h	2020-07-24 23:46:01.066927931 +0300
+@@ -0,0 +1,11 @@
++#ifndef __android_crypt_password_h__
++#define __android_crypt_password_h__
++
++#define android_pkcs5_algo "sha512"
++#define android_pkcs5_iter 3000
++#define android_pkcs5_salt_length 8
++#define android_pkcs5_out_length 64
++
++unsigned char *android_hash_password(const char*, unsigned long);
++#endif
++
+diff -Naur ori/dropbear-2020.80/android_openpty.c dropbear-2020.80/android_openpty.c
+--- ori/dropbear-2020.80/android_openpty.c	1970-01-01 02:00:00.000000000 +0200
++++ dropbear-2020.80/android_openpty.c	2020-07-23 23:43:58.491665421 +0300
+@@ -0,0 +1,51 @@
++//https://github.com/paddybyers/pty
++
++#include "android_pty.h"
++
++#include <fcntl.h>
++#include <stdlib.h>
++//#include "util.h"
++
++int
++openpty (int *amaster, int *aslave, char *name, struct termios *termp,
++         struct winsize *winp)
++{
++  int master, slave;
++  char *name_slave;
++
++  master = open("/dev/ptmx", O_RDWR | O_NONBLOCK);
++  if (master == -1) {
++    TRACE(("Fail to open master"))
++    return -1;
++  }
++
++  if (grantpt(master))
++    goto fail;
++
++  if (unlockpt(master))
++    goto fail;
++
++  name_slave = ptsname(master);
++  TRACE(("openpty: slave name %s", name_slave))
++  slave = open(name_slave, O_RDWR | O_NOCTTY);
++  if (slave == -1)
++    {
++      goto fail;
++    }
++
++  if(termp)
++    tcsetattr(slave, TCSAFLUSH, termp);
++  if (winp)
++    ioctl (slave, TIOCSWINSZ, winp);
++
++  *amaster = master;
++  *aslave = slave;
++  if (name != NULL)
++    strcpy(name, name_slave);
++
++  return 0;
++
++ fail:
++  close (master);
++  return -1;
++}
+diff -Naur ori/dropbear-2020.80/android_pty.h dropbear-2020.80/android_pty.h
+--- ori/dropbear-2020.80/android_pty.h	1970-01-01 02:00:00.000000000 +0200
++++ dropbear-2020.80/android_pty.h	2020-07-23 23:39:12.390176441 +0300
+@@ -0,0 +1,40 @@
++/* Functions for pseudo TTY handling.
++   Copyright (C) 1996, 1997, 1999 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, write to the Free
++   Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
++   02111-1307 USA.  */
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++#ifndef _PTY_H
++#define _PTY_H	1
++
++#include <features.h>
++
++#include <termios.h>
++#include <sys/ioctl.h>
++
++/* Create pseudo tty master slave pair with NAME and set terminal
++   attributes according to TERMP and WINP and return handles for both
++   ends in AMASTER and ASLAVE.  */
++int openpty (int *__amaster, int *__aslave, char *__name,
++		    struct termios *__termp, struct winsize *__winp);
++
++#ifdef __cplusplus
++}
++#endif
++#endif	/* pty.h */
+\ No newline at end of file
+diff -Naur ori/dropbear-2020.80/cli-auth.c dropbear-2020.80/cli-auth.c
+--- ori/dropbear-2020.80/cli-auth.c	2020-06-26 16:45:59.000000000 +0300
++++ dropbear-2020.80/cli-auth.c	2020-07-24 00:18:58.537024167 +0300
+@@ -31,6 +31,9 @@
+ #include "ssh.h"
+ #include "packet.h"
+ #include "runopts.h"
++#if defined(__ANDROID__) || defined(ANDROID)
++#include "netbsd_getpass.h"
++#endif
+ 
+ void cli_authinitialise() {
+ 
+diff -Naur ori/dropbear-2020.80/default_options.h dropbear-2020.80/default_options.h
+--- ori/dropbear-2020.80/default_options.h	2020-06-26 16:45:59.000000000 +0300
++++ dropbear-2020.80/default_options.h	2020-07-24 00:28:38.727185608 +0300
+@@ -19,10 +19,17 @@
+ #define DROPBEAR_DEFADDRESS ""
+ 
+ /* Default hostkey paths - these can be specified on the command line */
++#if defined(__ANDROID__) || defined(ANDROID)
++#define DSS_PRIV_FILENAME "/data/dropbear/dropbear_dss_host_key"
++#define RSA_PRIV_FILENAME "/data/dropbear/dropbear_rsa_host_key"
++#define ECDSA_PRIV_FILENAME "/data/dropbear/dropbear_ecdsa_host_key"
++#define ED25519_PRIV_FILENAME "/data/dropbear/dropbear_ed25519_host_key"
++#else
+ #define DSS_PRIV_FILENAME "/etc/dropbear/dropbear_dss_host_key"
+ #define RSA_PRIV_FILENAME "/etc/dropbear/dropbear_rsa_host_key"
+ #define ECDSA_PRIV_FILENAME "/etc/dropbear/dropbear_ecdsa_host_key"
+ #define ED25519_PRIV_FILENAME "/etc/dropbear/dropbear_ed25519_host_key"
++#endif
+ 
+ /* Set NON_INETD_MODE if you require daemon functionality (ie Dropbear listens
+  * on chosen ports and keeps accepting connections. This is the default.
+diff -Naur ori/dropbear-2020.80/libtomcrypt/src/headers/tomcrypt_dropbear.h dropbear-2020.80/libtomcrypt/src/headers/tomcrypt_dropbear.h
+--- ori/dropbear-2020.80/libtomcrypt/src/headers/tomcrypt_dropbear.h	2020-06-26 16:45:59.000000000 +0300
++++ dropbear-2020.80/libtomcrypt/src/headers/tomcrypt_dropbear.h	2020-07-24 23:11:06.431799142 +0300
+@@ -89,4 +89,12 @@
+ 
+ #define LTC_BASE64
+ 
++//needed for android
++#define LTC_DEVRANDOM
++#define LTC_TRY_URANDOM_FIRST
++#define LTC_RNG_GET_BYTES
++
++#define LTC_PKCS_5
++//
++
+ /* end Dropbear config */
+diff -Naur ori/dropbear-2020.80/netbsd_getpass.c dropbear-2020.80/netbsd_getpass.c
+--- ori/dropbear-2020.80/netbsd_getpass.c	1970-01-01 02:00:00.000000000 +0200
++++ dropbear-2020.80/netbsd_getpass.c	2020-07-24 00:17:32.457703186 +0300
+@@ -0,0 +1,104 @@
++/*	$NetBSD: getpass.c,v 1.15 2003/08/07 16:42:50 agc Exp $	*/
++/*
++ * Copyright (c) 1988, 1993
++ *	The Regents of the University of California.  All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ * 1. Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in the
++ *    documentation and/or other materials provided with the distribution.
++ * 3. Neither the name of the University nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
++ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
++ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
++ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
++ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
++ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
++ * SUCH DAMAGE.
++ */
++#if 0
++#include <sys/cdefs.h>
++#if defined(LIBC_SCCS) && !defined(lint)
++#if 0
++static char sccsid[] = "@(#)getpass.c	8.1 (Berkeley) 6/4/93";
++#else
++__RCSID("$NetBSD: getpass.c,v 1.15 2003/08/07 16:42:50 agc Exp $");
++#endif
++#endif /* LIBC_SCCS and not lint */
++#include "namespace.h"
++#endif
++#include <assert.h>
++#include <paths.h>
++#include <pwd.h>
++#include <signal.h>
++#include <stdio.h>
++#include <termios.h>
++#include <unistd.h>
++#if 0
++#ifdef __weak_alias
++__weak_alias(getpass,_getpass)
++#endif
++#endif
++char *
++getpass(prompt)
++	const char *prompt;
++{
++	struct termios term;
++	int ch;
++	char *p;
++	FILE *fp, *outfp;
++	int echo;
++	static char buf[_PASSWORD_LEN + 1];
++	sigset_t oset, nset;
++#if 0
++	_DIAGASSERT(prompt != NULL);
++#endif
++	/*
++	 * read and write to /dev/tty if possible; else read from
++	 * stdin and write to stderr.
++	 */
++	if ((outfp = fp = fopen(_PATH_TTY, "w+")) == NULL) {
++		outfp = stderr;
++		fp = stdin;
++	}
++	/*
++	 * note - blocking signals isn't necessarily the
++	 * right thing, but we leave it for now.
++	 */
++	sigemptyset(&nset);
++	sigaddset(&nset, SIGINT);
++	sigaddset(&nset, SIGTSTP);
++	(void)sigprocmask(SIG_BLOCK, &nset, &oset);
++	(void)tcgetattr(fileno(fp), &term);
++	if ((echo = (term.c_lflag & ECHO)) != 0) {
++		term.c_lflag &= ~ECHO;
++		(void)tcsetattr(fileno(fp), TCSAFLUSH /*|TCSASOFT*/, &term);
++	}
++	if (prompt != NULL)
++		(void)fputs(prompt, outfp);
++	rewind(outfp);			/* implied flush */
++	for (p = buf; (ch = getc(fp)) != EOF && ch != '\n';)
++		if (p < buf + _PASSWORD_LEN)
++			*p++ = ch;
++	*p = '\0';
++	(void)write(fileno(outfp), "\n", 1);
++	if (echo) {
++		term.c_lflag |= ECHO;
++		(void)tcsetattr(fileno(fp), TCSAFLUSH/*|TCSASOFT*/, &term);
++	}
++	(void)sigprocmask(SIG_SETMASK, &oset, NULL);
++	if (fp != stdin)
++		(void)fclose(fp);
++	return(buf);
++}
+diff -Naur ori/dropbear-2020.80/netbsd_getpass.h dropbear-2020.80/netbsd_getpass.h
+--- ori/dropbear-2020.80/netbsd_getpass.h	1970-01-01 02:00:00.000000000 +0200
++++ dropbear-2020.80/netbsd_getpass.h	2020-07-24 00:18:09.841408508 +0300
+@@ -0,0 +1,8 @@
++#ifndef __GETPASS_H__
++#define __GETPASS_H__
++extern char *getpass (const char *prompt);
++
++#include "netbsd_getpass.c"
++
++#endif
++
+diff -Naur ori/dropbear-2020.80/runopts.h dropbear-2020.80/runopts.h
+--- ori/dropbear-2020.80/runopts.h	2020-06-26 16:45:59.000000000 +0300
++++ dropbear-2020.80/runopts.h	2020-07-24 16:52:30.319577285 +0300
+@@ -25,6 +25,7 @@
+ #ifndef DROPBEAR_RUNOPTS_H_
+ #define DROPBEAR_RUNOPTS_H_
+ 
++#include <pwd.h>
+ #include "includes.h"
+ #include "signkey.h"
+ #include "buffer.h"
+@@ -123,6 +124,14 @@
+ 	buffer * banner;
+ 	char * pidfile;
+ 
++	int android_mode;
++	char *user_name;
++	char *passwd;
++	char *authkey;
++	char *pw_dir;
++	uid_t uid;
++	gid_t gid;
++
+ 	char * forced_command;
+ 
+ #if DROPBEAR_PLUGIN 
+diff -Naur ori/dropbear-2020.80/sshpty.c dropbear-2020.80/sshpty.c
+--- ori/dropbear-2020.80/sshpty.c	2020-06-26 16:45:59.000000000 +0300
++++ dropbear-2020.80/sshpty.c	2020-07-24 00:05:45.975161419 +0300
+@@ -22,6 +22,11 @@
+ #include "errno.h"
+ #include "sshpty.h"
+ 
++#if defined(__ANDROID__) || defined(ANDROID)
++#define HAVE_OPENPTY
++#include "android_openpty.c"
++#endif
++
+ /* Pty allocated with _getpty gets broken if we do I_PUSH:es to it. */
+ #if defined(HAVE__GETPTY) || defined(HAVE_OPENPTY)
+ #undef HAVE_DEV_PTMX
+@@ -53,13 +58,23 @@
+ 	char *name;
+ 	int i;
+ 
++#if defined(__ANDROID__) || defined(ANDROID)
++	static char openpty_ttyname[4096];
++
++	i = openpty(ptyfd, ttyfd, openpty_ttyname, NULL, NULL);
++#else
+ 	i = openpty(ptyfd, ttyfd, NULL, NULL, NULL);
++#endif
+ 	if (i < 0) {
+ 		dropbear_log(LOG_WARNING, 
+ 				"pty_allocate: openpty: %.100s", strerror(errno));
+ 		return 0;
+ 	}
++#if defined(__ANDROID__) || defined(ANDROID)
++	name = openpty_ttyname;
++#else
+ 	name = ttyname(*ttyfd);
++#endif
+ 	if (!name) {
+ 		dropbear_exit("ttyname fails for openpty device");
+ 	}
+diff -Naur ori/dropbear-2020.80/svr-auth.c dropbear-2020.80/svr-auth.c
+--- ori/dropbear-2020.80/svr-auth.c	2020-06-26 16:45:59.000000000 +0300
++++ dropbear-2020.80/svr-auth.c	2020-07-24 17:54:16.851376095 +0300
+@@ -37,11 +37,13 @@
+ #include "runopts.h"
+ #include "dbrandom.h"
+ 
++static void authclear(void);
++
+ static int checkusername(const char *username, unsigned int userlen);
+ 
+ /* initialise the first time for a session, resetting all parameters */
+ void svr_authinitialise() {
+-	memset(&ses.authstate, 0, sizeof(ses.authstate));
++	/*memset(&ses.authstate, 0, sizeof(ses.authstate));
+ #if DROPBEAR_SVR_PUBKEY_AUTH
+ 	ses.authstate.authtypes |= AUTH_TYPE_PUBKEY;
+ #endif
+@@ -49,7 +51,13 @@
+ 	if (!svr_opts.noauthpass) {
+ 		ses.authstate.authtypes |= AUTH_TYPE_PASSWORD;
+ 	}
+-#endif
++#endif*/
++	ses.authstate.failcount = 0;
++	ses.authstate.pw_name = NULL;
++	ses.authstate.pw_dir = NULL;
++	ses.authstate.pw_shell = NULL;
++	ses.authstate.pw_passwd = NULL;
++	authclear();
+ }
+ 
+ /* Send a banner message if specified to the client. The client might
+@@ -152,7 +160,11 @@
+ 		if (methodlen == AUTH_METHOD_PASSWORD_LEN &&
+ 				strncmp(methodname, AUTH_METHOD_PASSWORD,
+ 					AUTH_METHOD_PASSWORD_LEN) == 0) {
+-			svr_auth_password(valid_user);
++			if (svr_opts.android_mode) {
++				svr_auth_android(valid_user);
++			} else if (valid_user) {
++				svr_auth_password(valid_user);
++			}
+ 			goto out;
+ 		}
+ 	}
+@@ -227,6 +239,35 @@
+ }
+ #endif
+ 
++/* Reset the auth state, but don't reset the failcount. This is for if the
++ * user decides to try with a different username etc, and is also invoked
++ * on initialisation */
++static void authclear() {
++	
++	memset(&ses.authstate, 0, sizeof(ses.authstate));
++#if DROPBEAR_SVR_PUBKEY_AUTH
++	ses.authstate.authtypes |= AUTH_TYPE_PUBKEY;
++#endif
++#if DROPBEAR_SVR_PASSWORD_AUTH || DROPBEAR_SVR_PAM_AUTH
++	if (!svr_opts.noauthpass) {
++		ses.authstate.authtypes |= AUTH_TYPE_PASSWORD;
++	}
++#endif
++	if (ses.authstate.pw_name) {
++		m_free(ses.authstate.pw_name);
++	}
++	if (ses.authstate.pw_shell) {
++		m_free(ses.authstate.pw_shell);
++	}
++	if (ses.authstate.pw_dir) {
++		m_free(ses.authstate.pw_dir);
++	}
++	if (ses.authstate.pw_passwd) {
++		m_free(ses.authstate.pw_passwd);
++	}
++	
++}
++
+ /* Check that the username exists and isn't disallowed (root), and has a valid shell.
+  * returns DROPBEAR_SUCCESS on valid username, DROPBEAR_FAILURE on failure */
+ static int checkusername(const char *username, unsigned int userlen) {
+@@ -244,10 +285,46 @@
+ 		dropbear_exit("Attempted username with a null byte");
+ 	}
+ 
+-	if (ses.authstate.username == NULL) {
++	//if (ses.authstate.username == NULL) {
+ 		/* first request */
+-		fill_passwd(username);
+-		ses.authstate.username = m_strdup(username);
++	//	fill_passwd(username);
++	//	ses.authstate.username = m_strdup(username);
++	if (ses.authstate.username == NULL ||
++		strcmp(username, ses.authstate.username) != 0) {
++			/* the username needs resetting */
++			if (ses.authstate.username != NULL) {
++				dropbear_log(LOG_WARNING, "Client trying multiple usernames from %s",
++							svr_ses.addrstring);
++				m_free(ses.authstate.username);
++			}
++			authclear();
++			if (svr_opts.android_mode) {
++				ses.authstate.pw_uid = svr_opts.uid;
++				ses.authstate.pw_gid = svr_opts.gid;
++				if (svr_opts.user_name != NULL) {
++					ses.authstate.pw_name = m_strdup(svr_opts.user_name);
++				} else {
++					dropbear_log(LOG_WARNING, "Username null");
++					ses.authstate.pw_name = m_strdup("nobody");
++				}
++
++				if (svr_opts.passwd != NULL) {
++					ses.authstate.pw_passwd = m_strdup(svr_opts.passwd);
++				} else {
++					dropbear_log(LOG_WARNING, "Password null");
++					ses.authstate.pw_passwd = m_strdup("");
++				}
++
++				if (svr_opts.pw_dir != NULL)
++					ses.authstate.pw_dir = m_strdup(svr_opts.pw_dir);
++				else
++					ses.authstate.pw_dir = m_strdup("/data/local");
++				ses.authstate.pw_shell = m_strdup("/system/bin/sh");
++			} else {
++				dropbear_log(LOG_WARNING, "NOT android mode!!");
++				fill_passwd(username);
++				ses.authstate.username = m_strdup(username);
++			}
+ 	} else {
+ 		/* check username hasn't changed */
+ 		if (strcmp(username, ses.authstate.username) != 0) {
+@@ -313,6 +390,9 @@
+ 		usershell = "/bin/sh";
+ 	}
+ 
++	if (svr_opts.android_mode)
++		goto goodshell;
++
+ 	/* check the shell is valid. If /etc/shells doesn't exist, getusershell()
+ 	 * should return some standard shells like "/bin/sh" and "/bin/csh" (this
+ 	 * is platform-specific) */
+diff -Naur ori/dropbear-2020.80/svr-authpasswd.c dropbear-2020.80/svr-authpasswd.c
+--- ori/dropbear-2020.80/svr-authpasswd.c	2020-06-26 16:45:59.000000000 +0300
++++ dropbear-2020.80/svr-authpasswd.c	2020-07-24 22:08:06.055179845 +0300
+@@ -46,8 +46,92 @@
+ 	return constant_time_memcmp(a, b, la);
+ }
+ 
++#if defined(__ANDROID__) || defined(ANDROID)
++#include "android_crypt_password.c"
+ /* Process a password auth request, sending success or failure messages as
+  * appropriate */
++void svr_auth_android(int valid_user) {
++
++	char * passwdcrypt = NULL; /* the crypt from /etc/passwd or /etc/shadow */
++	char * testcrypt = NULL; /* crypt generated from the user's password sent */
++	char * password = NULL;
++	unsigned int passwordlen;
++	unsigned int changepw;
++
++	/* check if client wants to change password */
++	changepw = buf_getbool(ses.payload);
++	if (changepw) {
++		/* not implemented by this server */
++		send_msg_userauth_failure(0, 1);
++		return;
++	}
++
++	passwdcrypt = svr_opts.passwd;
++
++	password = buf_getstring(ses.payload, &passwordlen);
++
++	if (valid_user && passwordlen <= DROPBEAR_MAX_PASSWORD_LEN) {
++		testcrypt = android_hash_password(password, passwordlen);
++	}
++	m_burn(password, passwordlen);
++	m_free(password);
++
++	/* After we have got the payload contents we can exit if the username
++	is invalid. Invalid users have already been logged. */
++	if (!valid_user) {
++		send_msg_userauth_failure(0, 1);
++		return;
++	}
++
++	if (passwordlen > DROPBEAR_MAX_PASSWORD_LEN) {
++		dropbear_log(LOG_WARNING,
++				"Too-long password attempt for '%s' from %s",
++				ses.authstate.pw_name,
++				svr_ses.addrstring);
++		send_msg_userauth_failure(0, 1);
++		return;
++	}
++
++	if (testcrypt == NULL) {
++		/* crypt() with an invalid salt like "!!" */
++		dropbear_log(LOG_WARNING, "User account '%s' is locked",
++				ses.authstate.pw_name);
++		send_msg_userauth_failure(0, 1);
++		return;
++	}
++
++	/* check for empty password */
++	if (passwdcrypt[0] == '\0') {
++		dropbear_log(LOG_WARNING, "User '%s' has blank password, rejected",
++				ses.authstate.pw_name);
++		send_msg_userauth_failure(0, 1);
++		return;
++	}
++
++	if (constant_time_strcmp(testcrypt, passwdcrypt) == 0) {
++		/* successful authentication */
++		dropbear_log(LOG_NOTICE, 
++				"Password auth succeeded for '%s' from %s",
++				ses.authstate.pw_name,
++				svr_ses.addrstring);
++		send_msg_userauth_success();
++	} else {
++		dropbear_log(LOG_WARNING,
++				"Bad password attempt for '%s' from %s",
++				ses.authstate.pw_name,
++				svr_ses.addrstring);
++		send_msg_userauth_failure(0, 1);
++	}
++}
++void svr_auth_password(int valid_user) {
++	send_msg_userauth_failure(0, 1);
++	return;
++}
++#else
++void svr_auth_android(int valid_user) {
++	send_msg_userauth_failure(0, 1);
++	return;
++}
+ void svr_auth_password(int valid_user) {
+ 	
+ 	char * passwdcrypt = NULL; /* the crypt from /etc/passwd or /etc/shadow */
+@@ -120,5 +204,6 @@
+ 		send_msg_userauth_failure(0, 1);
+ 	}
+ }
++#endif
+ 
+ #endif
+diff -Naur ori/dropbear-2020.80/svr-authpubkey.c dropbear-2020.80/svr-authpubkey.c
+--- ori/dropbear-2020.80/svr-authpubkey.c	2020-06-26 16:45:59.000000000 +0300
++++ dropbear-2020.80/svr-authpubkey.c	2020-07-24 17:18:48.080156749 +0300
+@@ -64,6 +64,7 @@
+ #include "ssh.h"
+ #include "packet.h"
+ #include "algo.h"
++#include "runopts.h"
+ 
+ #if DROPBEAR_SVR_PUBKEY_AUTH
+ 
+@@ -381,19 +382,25 @@
+ 	TRACE(("enter checkpubkey"))
+ 
+ 	/* check file permissions, also whether file exists */
+-	if (checkpubkeyperms() == DROPBEAR_FAILURE) {
++	if (!svr_opts.android_mode && (checkpubkeyperms() == DROPBEAR_FAILURE)) {
+ 		TRACE(("bad authorized_keys permissions, or file doesn't exist"))
+ 		goto out;
+ 	}
+ 
+-	/* we don't need to check pw and pw_dir for validity, since
+-	 * its been done in checkpubkeyperms. */
+-	len = strlen(ses.authstate.pw_dir);
+-	/* allocate max required pathname storage,
+-	 * = path + "/.ssh/authorized_keys" + '\0' = pathlen + 22 */
+-	filename = m_malloc(len + 22);
+-	snprintf(filename, len + 22, "%s/.ssh/authorized_keys", 
+-				ses.authstate.pw_dir);
++	if (svr_opts.android_mode) {
++		if (svr_opts.authkey == NULL)
++			goto out;
++		filename = m_strdup(svr_opts.authkey);
++	} else {
++		/* we don't need to check pw and pw_dir for validity, since
++		 * its been done in checkpubkeyperms. */
++		len = strlen(ses.authstate.pw_dir);
++		/* allocate max required pathname storage,
++		 * = path + "/.ssh/authorized_keys" + '\0' = pathlen + 22 */
++		filename = m_malloc(len + 22);
++		snprintf(filename, len + 22, "%s/.ssh/authorized_keys", 
++					ses.authstate.pw_dir);
++	}
+ 
+ #if DROPBEAR_SVR_MULTIUSER
+ 	/* open the file as the authenticating user. */
+diff -Naur ori/dropbear-2020.80/svr-chansession.c dropbear-2020.80/svr-chansession.c
+--- ori/dropbear-2020.80/svr-chansession.c	2020-06-26 16:45:59.000000000 +0300
++++ dropbear-2020.80/svr-chansession.c	2020-07-24 17:19:48.451398205 +0300
+@@ -607,11 +607,22 @@
+ 		dropbear_exit("Out of memory"); /* TODO disconnect */
+ 	}
+ 
+-	pw = getpwnam(ses.authstate.pw_name);
++	if (svr_opts.android_mode) {
++		pw = malloc(sizeof(struct passwd));
++		pw->pw_uid = svr_opts.uid;
++		pw->pw_gid = svr_opts.gid;
++	} else {
++		pw = getpwnam(ses.authstate.pw_name);
++	}
++
+ 	if (!pw)
+ 		dropbear_exit("getpwnam failed after succeeding previously");
+ 	pty_setowner(pw, chansess->tty);
+ 
++	if (svr_opts.android_mode) {
++		free(pw);
++	}
++
+ 	/* Set up the rows/col counts */
+ 	sessionwinchange(chansess);
+ 
+@@ -977,7 +988,20 @@
+ 	addnewvar("LOGNAME", ses.authstate.pw_name);
+ 	addnewvar("HOME", ses.authstate.pw_dir);
+ 	addnewvar("SHELL", get_user_shell());
+-	addnewvar("PATH", DEFAULT_PATH);
++
++	if (svr_opts.android_mode) {
++		addnewvar("PATH", "/bin:/sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin:/app/bin:/system/bin/wifi_brcm/exe");
++		addnewvar("ANDROID_ASSETS", "/system/app");
++		addnewvar("ANDROID_BOOTLOGO", "1");
++		addnewvar("ANDROID_DATA", "/data");
++		addnewvar("ANDROID_PROPERTY_WORKSPACE", "9,0");
++		addnewvar("ANDROID_ROOT", "/system");
++		addnewvar("BOOTCLASSPATH", "/system/framework/core.jar:/system/framework/bouncycastle.jar:/system/framework/ext.jar:/system/framework/framework.jar:/system/framework/android.policy.jar:/system/framework/services.jar:/system/framework/core-junit.jar");
++		addnewvar("EXTERNAL_STORAGE", "/mnt/sdcard");
++	} else {
++		addnewvar("PATH", DEFAULT_PATH);
++	}
++
+ 	if (chansess->term != NULL) {
+ 		addnewvar("TERM", chansess->term);
+ 	}
+diff -Naur ori/dropbear-2020.80/svr-main.c dropbear-2020.80/svr-main.c
+--- ori/dropbear-2020.80/svr-main.c	2020-06-26 16:45:59.000000000 +0300
++++ dropbear-2020.80/svr-main.c	2020-07-25 00:08:59.690461411 +0300
+@@ -31,6 +31,8 @@
+ #include "dbrandom.h"
+ #include "crypto_desc.h"
+ 
++#include "android_crypt_password.h"
++
+ static size_t listensockets(int *sock, size_t sockcount, int *maxfd);
+ static void sigchld_handler(int dummy);
+ static void sigsegv_handler(int);
+@@ -397,6 +399,22 @@
+ 	}
+ 
+ 	crypto_init();
++	//android
++	if (svr_opts.android_mode) {
++		char *ori_passwd = svr_opts.passwd;
++		svr_opts.passwd = android_hash_password(ori_passwd, strlen(ori_passwd));
++		if (svr_opts.passwd == NULL) {
++			dropbear_exit("Cannot hash password!");
++		}
++
++		//replace the plaintext password with zeros \0, and keep the hashed one
++		while (*ori_passwd != '\0') {
++			*ori_passwd = '\0';
++			ori_passwd++;
++		}
++		
++	}
++	//
+ 
+ 	/* Now we can setup the hostkeys - needs to be after logging is on,
+ 	 * otherwise we might end up blatting error messages to the socket */
+diff -Naur ori/dropbear-2020.80/svr-runopts.c dropbear-2020.80/svr-runopts.c
+--- ori/dropbear-2020.80/svr-runopts.c	2020-06-26 16:45:59.000000000 +0300
++++ dropbear-2020.80/svr-runopts.c	2020-07-24 23:17:22.970975553 +0300
+@@ -73,15 +73,22 @@
+ 					"-m		Don't display the motd on login\n"
+ #endif
+ 					"-w		Disallow root logins\n"
++#if defined(__ANDROID__) || defined(ANDROID)
++#else
+ #ifdef HAVE_GETGROUPLIST
+ 					"-G		Restrict logins to members of specified group\n"
+ #endif
++#endif
++
+ #if DROPBEAR_SVR_PASSWORD_AUTH || DROPBEAR_SVR_PAM_AUTH
+ 					"-s		Disable password logins\n"
+ 					"-g		Disable password logins for root\n"
+ 					"-B		Allow blank password logins\n"
+ #endif
++#if defined(__ANDROID__) || defined(ANDROID)
++#else
+ 					"-T		Maximum authentication tries (default %d)\n"
++#endif
+ #if DROPBEAR_SVR_LOCALTCPFWD
+ 					"-j		Disable local port forwarding\n"
+ #endif
+@@ -102,10 +109,20 @@
+ 					"-W <receive_window_buffer> (default %d, larger may be faster, max 1MB)\n"
+ 					"-K <keepalive>  (0 is never, default %d, in seconds)\n"
+ 					"-I <idle_timeout>  (0 is never, default %d, in seconds)\n"
++#if defined(__ANDROID__) || defined(ANDROID)
++					"-A Android mode, specify a user explicitly\n"
++					"-N Android Mode, user name\n"
++					"-C Android Mode, password\n"
++					"-T Android Mode, public key file (authorized_keys)\n"               
++					"-U Android Mode, UID\n"
++					"-G Android Mode, GID\n"
++					"-S Android Mode, PWD start dir\n"
++#else
+ #if DROPBEAR_PLUGIN
+                                         "-A <authplugin>[,<options>]\n"
+                                         "               Enable external public key auth through <authplugin>\n"
+ #endif
++#endif
+ 					"-V    Version\n"
+ #if DEBUG_TRACE
+ 					"-v		verbose (compiled with DEBUG_TRACE)\n"
+@@ -123,7 +140,10 @@
+ #if DROPBEAR_ED25519
+ 					ED25519_PRIV_FILENAME,
+ #endif
++#if defined(__ANDROID__) || defined(ANDROID)
++#else
+ 					MAX_AUTH_TRIES,
++#endif
+ 					DROPBEAR_MAX_PORTS, DROPBEAR_DEFPORT, DROPBEAR_PIDFILE,
+ 					DEFAULT_RECV_WINDOW, DEFAULT_KEEPALIVE, DEFAULT_IDLE_TIMEOUT);
+ }
+@@ -132,6 +152,7 @@
+ 
+ 	unsigned int i, j;
+ 	char ** next = NULL;
++	int nextisint = 0;
+ 	int nextisport = 0;
+ 	char* recv_window_arg = NULL;
+ 	char* keepalive_arg = NULL;
+@@ -163,6 +184,13 @@
+ 	svr_opts.hostkey = NULL;
+ 	svr_opts.delay_hostkey = 0;
+ 	svr_opts.pidfile = DROPBEAR_PIDFILE;
++	svr_opts.android_mode = 0;
++	svr_opts.user_name = NULL;
++	svr_opts.passwd = NULL;
++	svr_opts.authkey = NULL;
++	svr_opts.pw_dir = NULL;
++	svr_opts.uid = 0;
++	svr_opts.gid = 0;
+ #if DROPBEAR_SVR_LOCALTCPFWD
+ 	svr_opts.nolocaltcp = 0;
+ #endif
+@@ -256,11 +284,14 @@
+ 				case 'w':
+ 					svr_opts.norootlogin = 1;
+ 					break;
++#if defined(__ANDROID__) || defined(ANDROID)
++#else
+ #ifdef HAVE_GETGROUPLIST
+ 				case 'G':
+ 					next = &svr_opts.restrict_group;
+ 					break;
+ #endif
++#endif
+ 				case 'W':
+ 					next = &recv_window_arg;
+ 					break;
+@@ -270,9 +301,12 @@
+ 				case 'I':
+ 					next = &idle_timeout_arg;
+ 					break;
++#if defined(__ANDROID__) || defined(ANDROID)
++#else
+ 				case 'T':
+ 					next = &maxauthtries_arg;
+ 					break;
++#endif
+ #if DROPBEAR_SVR_PASSWORD_AUTH || DROPBEAR_SVR_PAM_AUTH
+ 				case 's':
+ 					svr_opts.noauthpass = 1;
+@@ -291,11 +325,37 @@
+ 				case 'u':
+ 					/* backwards compatibility with old urandom option */
+ 					break;
++#if defined(__ANDROID__) || defined(ANDROID)
++				case 'A': //android
++					svr_opts.android_mode = 1;
++					break;
++				case 'N':
++					next = &svr_opts.user_name;
++					break;
++				case 'C':
++					next = &svr_opts.passwd;
++					break;
++				case 'T':
++					next = &svr_opts.authkey;
++					break;
++				case 'U':
++					next = &svr_opts.uid;
++					nextisint = 1;
++					break;
++				case 'G':
++					next = &svr_opts.gid;
++					nextisint = 1;
++					break;
++				case 'S':
++					next = &svr_opts.pw_dir;
++					break;
++#else
+ #if DROPBEAR_PLUGIN
+                                 case 'A':
+                                         next = &pubkey_plugin;
+                                         break;
+ #endif
++#endif
+ #if DEBUG_TRACE
+ 				case 'v':
+ 					debug_trace = 1;
+@@ -313,7 +373,7 @@
+ 			}
+ 		}
+ 
+-		if (!next && !nextisport)
++		if (!next && !nextisport && !nextisint)
+ 			continue;
+ 
+ 		if (c == '\0') {
+@@ -324,7 +384,12 @@
+ 			}
+ 		}
+ 
+-		if (nextisport) {
++		if (nextisint) {
++			*next = atoi(argv[i]);
++			nextisint = 0;
++			next = 0x00;
++			continue;
++		} else if (nextisport) {
+ 			addportandaddress(&argv[i][j]);
+ 			nextisport = 0;
+ 		} else if (next) {
+diff -Naur ori/dropbear-2020.80/sysoptions.h dropbear-2020.80/sysoptions.h
+--- ori/dropbear-2020.80/sysoptions.h	2020-06-26 16:45:59.000000000 +0300
++++ dropbear-2020.80/sysoptions.h	2020-07-24 00:01:11.557169542 +0300
+@@ -255,9 +255,14 @@
+ #endif
+ 
+ #if DROPBEAR_SVR_PASSWORD_AUTH && !HAVE_CRYPT
++
++#if defined(__ANDROID__) || defined(ANDROID)
++#else
+ 	#error "DROPBEAR_SVR_PASSWORD_AUTH requires `crypt()'."
+ #endif
+ 
++#endif
++
+ #if !(DROPBEAR_SVR_PASSWORD_AUTH || DROPBEAR_SVR_PAM_AUTH || DROPBEAR_SVR_PUBKEY_AUTH)
+ 	#error "At least one server authentication type must be enabled. DROPBEAR_SVR_PUBKEY_AUTH and DROPBEAR_SVR_PASSWORD_AUTH are recommended."
+ #endif
