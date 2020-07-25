@@ -11,8 +11,8 @@ mkdir -p /data/root-home
 mkdir -p /data/root-home/.ssh
 
 SSH_USER="root"
-SSH_PASS=$(cat /data/root-home/password | busybox tr -d '\n')
 SSH_HOME="/data/root-home"
+SSH_PASS=$(cat /data/root-home/password | busybox tr -d '\n')
 SSH_AUTHKEYSFILE="$SSH_HOME/.ssh/authorized_keys"
 
 #///////

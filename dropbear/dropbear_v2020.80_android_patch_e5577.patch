@@ -770,7 +770,7 @@ diff -Naur ori/dropbear-2020.80/svr-chansession.c dropbear-2020.80/svr-chansessi
  	}
 diff -Naur ori/dropbear-2020.80/svr-main.c dropbear-2020.80/svr-main.c
 --- ori/dropbear-2020.80/svr-main.c	2020-06-26 16:45:59.000000000 +0300
-+++ dropbear-2020.80/svr-main.c	2020-07-25 00:42:15.486444799 +0300
++++ dropbear-2020.80/svr-main.c	2020-07-25 23:05:13.946503602 +0300
 @@ -31,6 +31,8 @@
  #include "dbrandom.h"
  #include "crypto_desc.h"
@@ -780,7 +780,7 @@ diff -Naur ori/dropbear-2020.80/svr-main.c dropbear-2020.80/svr-main.c
  static size_t listensockets(int *sock, size_t sockcount, int *maxfd);
  static void sigchld_handler(int dummy);
  static void sigsegv_handler(int);
-@@ -397,6 +399,28 @@
+@@ -397,6 +399,30 @@
  	}
  
  	crypto_init();
@@ -796,6 +796,8 @@ diff -Naur ori/dropbear-2020.80/svr-main.c dropbear-2020.80/svr-main.c
 +		//allocate a new buffer because android_hash_password returns the same buffer location each time (static buffer)
 +		svr_opts.passwd = (char *) malloc(android_pkcs5_out_length*2 + 2);
 +		if (svr_opts.passwd == NULL) dropbear_exit("Cannot allocate memory for output hash!");
++		//zero out the allocated memory
++		memset(svr_opts.passwd, 0x00, android_pkcs5_out_length*2 + 2);
 +		memcpy(svr_opts.passwd, new_passwd, strlen(new_passwd));
 +
 +		//replace the plaintext password with zeros \0, and keep the hashed one
